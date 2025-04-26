@@ -65,6 +65,13 @@ export const loginValidation = {
           const exists = await prisma.user.findUnique({
             where: {
               email: value
+            },
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+              password: true,
             }
           })
           if (!exists) {
