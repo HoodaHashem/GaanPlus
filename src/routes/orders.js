@@ -2,7 +2,7 @@ import { Router } from "express";
 import { checkSchema } from "express-validator";
 import validateJwtCookie from "../middlewares/auth.js";
 import { cancelOrder, completeOrder, createOrder, deliverOrder, getOrderById, getOrderItems, getOrders, prepareOrder } from "../controllers/orders.js";
-import { createOrderValidation, getOrderByIdValidation } from "../validations/orders.js";
+import { cancelOrderValidation, completeOrderValidation, createOrderValidation, deliverOrderValidation, getOrderByIdValidation, prepareOrderValidation } from "../validations/orders.js";
 
 const ordersRouter = Router();
 ordersRouter.use(validateJwtCookie)
@@ -12,9 +12,9 @@ ordersRouter.post("/",checkSchema(createOrderValidation), createOrder);
 ordersRouter.get("/items/:id", getOrderItems);
 ordersRouter.get("/", getOrders);
 
-ordersRouter.get("/cancel/:id",checkSchema(getOrderByIdValidation), cancelOrder); 
-ordersRouter.get("/prepare/:id",checkSchema(getOrderByIdValidation), prepareOrder);
-ordersRouter.get("/deliver/:id",checkSchema(getOrderByIdValidation), deliverOrder);
-ordersRouter.get("/complete/:id",checkSchema(getOrderByIdValidation), completeOrder);
+ordersRouter.get("/cancel/:id",checkSchema(cancelOrderValidation), cancelOrder); 
+ordersRouter.get("/prepare/:id",checkSchema(prepareOrderValidation), prepareOrder);
+ordersRouter.get("/deliver/:id",checkSchema(deliverOrderValidation), deliverOrder);
+ordersRouter.get("/complete/:id",checkSchema(completeOrderValidation), completeOrder);
 
 export default ordersRouter;

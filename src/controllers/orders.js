@@ -41,6 +41,8 @@ export const createOrder = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const { orderItems } = req.body;
 
+  //TODO: Send notification email to the restaurant owner and the user to confirm the order
+
   const order = await new Order({
     userId: userId,
     restaurantId: req.body.restaurantId,
@@ -70,13 +72,6 @@ export const prepareOrder = asyncHandler(async (req, res) => {
   }
   const order = req.order;
 
-  if (order.status !== "PENDING") {
-    return res.status(400).json({
-      status: "fail",
-      message: "Order is not in pending state",
-    });
-  }
-
   order.status = "PREPARING";
   await order.save();
 
@@ -96,13 +91,7 @@ export const deliverOrder = asyncHandler(async (req, res) => {
   }
   const order = req.order;
 
-  if (order.status !== "PREPARING") {
-    return res.status(400).json({
-      status: "fail",
-      message: "Order is not in preparing state",
-    });
-  }
-
+  //TODO: Send notification email to the user to confirm the order is out for delivery
   order.status = "OUT_FOR_DELIVERY";
   await order.save();
 
@@ -122,13 +111,7 @@ export const completeOrder = asyncHandler(async (req, res) => {
   }
   const order = req.order;
 
-  if (order.status !== "OUT_FOR_DELIVERY") {
-    return res.status(400).json({
-      status: "fail",
-      message: "Order is not in out for delivery state",
-    });
-  }
-
+  //TODO: Send notification email to the user to confirm the order is delivered
   order.status = "DELIVERED";
   await order.save();
 
@@ -148,20 +131,7 @@ export const cancelOrder = asyncHandler(async (req, res) => {
   }
   const order = req.order;
 
-  if (order.status === "CANCELLED") {
-    return res.status(400).json({
-      status: "fail",
-      message: "Order is already cancelled",
-    });
-  }
-
-  if (order.status === "DELIVERED") {
-    return res.status(400).json({
-      status: "fail",
-      message: "Order is already delivered",
-    });
-  }
-
+  //TODO: Send notification email to the restaurant owner and the user to confirm the order is cancelled
   order.status = "CANCELLED";
   await order.save();
 

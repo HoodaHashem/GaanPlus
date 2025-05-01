@@ -99,3 +99,146 @@ export const getOrderByIdValidation = {
     },
   },
 };
+
+export const cancelOrderValidation = {
+  id: {
+    in: "params",
+    isString: true,
+    errorMessage: "Order ID must be a string",
+    custom: {
+      options: async (value, { req }) => {
+        const order = await Order.findById(value).populate(
+          "orderItems.menuItemId"
+        );
+
+        if (!order) {
+          throw new Error("Order not found");
+        }
+        const user = req.user;
+        if (order.userId.toString() !== user.id) {
+          throw new Error("You are not authorized to cancel this order");
+        }
+
+        if (order.status === "CANCELLED") {
+          return res.status(400).json({
+            status: "fail",
+            message: "Order is already cancelled",
+          });
+        }
+
+        if (order.status === "DELIVERED") {
+          return res.status(400).json({
+            status: "fail",
+            message: "Order is already delivered",
+          });
+        }
+
+        req.order = order;
+      },
+    },
+  },
+};
+
+export const prepareOrderValidation = {
+  id: {
+    in: "params",
+    isString: true,
+    errorMessage: "Order ID must be a string",
+    custom: {
+      options: async (value, { req }) => {
+        const order = await Order.findById(value).populate(
+          "orderItems.menuItemId"
+        );
+
+        if (!order) {
+          throw new Error("Order not found");
+        }
+        const user = req.user;
+        const restaurant = await Restaurant.findById(
+          order.restaurantId
+        ).populate("ownerId");
+        
+        if (restaurant.ownerId._id.toString() !== user.id) {
+          throw new Error("You are not authorized to prepare this order");
+        }
+
+        if (order.status !== "PENDING") {
+          return res.status(400).json({
+            status: "fail",
+            message: "Order is not in pending state",
+          });
+        }
+
+        req.order = order;
+      },
+    },
+  },
+};
+
+export const deliverOrderValidation = {
+  id: {
+    in: "params",
+    isString: true,
+    errorMessage: "Order ID must be a string",
+    custom: {
+      options: async (value, { req }) => {
+        const order = await Order.findById(value).populate(
+          "orderItems.menuItemId"
+        );
+
+        if (!order) {
+          throw new Error("Order not found");
+        }
+        const user = req.user;
+        const restaurant = await Restaurant.findById(
+          order.restaurantId
+        ).populate("ownerId");
+        
+        if (restaurant.ownerId._id.toString() !== user.id) {
+          throw new Error("You are not authorized to deliver this order");
+        }
+
+        if (order.status !== "PREPARING") {
+          return res.status(400).json({
+            status: "fail",
+            message: "Order is not in preparing state",
+          });
+        }
+
+        req.order = order;
+      },
+    },
+  },
+};
+
+export const completeOrderValidation = {
+  id: {
+    in: "params",
+    isString: true,
+    errorMessage: "Order ID must be a string",
+    custom: {
+      options: async (value, { req }) => {
+        const order = await Order.findById(value).populate(
+          "orderItems.menuItemId"
+        );
+
+        if (!order) {
+          throw new Error("Order not found");
+        }
+        const user = req.user;
+        if (order.userId.toString() !== user.id) {
+          throw new Error("You are not authorized to complete this order");
+        }
+
+        if (order.status !== "OUT_FOR_DELIVERY") {
+          return res.status(400).json({
+            status: "fail",
+            message: "Order is not in out for delivery state",
+          });
+        }
+
+        req.order = order;
+      },
+    },
+  },
+};
