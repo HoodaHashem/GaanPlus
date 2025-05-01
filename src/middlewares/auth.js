@@ -1,7 +1,7 @@
 import asyncHandler from "../utils/asyncHandler.js";
 import jwt from "jsonwebtoken";
 import "dotenv/config";
-import prisma from "../utils/prisma.js";
+import User from "../models/userSchema.js";
 
 const validateJwtCookie = asyncHandler(async (req, res, next) => {
   const token = req.cookies.token;
@@ -12,17 +12,7 @@ const validateJwtCookie = asyncHandler(async (req, res, next) => {
     });
   }
   const decode = jwt.verify(token, process.env.JWT_SECRET);
-  const user = await prisma.user.findUnique({
-    where: {
-      id: decode.id,
-    },
-    select: {
-      id: true,
-      email: true,
-      firstName: true,
-      lastName: true,
-    },
-  });
+  const user = await User.findById(decode.id);
   if (!user) {
     return res.status(401).json({
       status: "fail",

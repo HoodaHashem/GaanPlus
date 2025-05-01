@@ -1,24 +1,22 @@
 import { validationResult } from "express-validator";
-import prisma from "../utils/prisma.js";
+import asyncHandler from "../utils/asyncHandler.js"
+import Restaurant from "../models/restaurantSchema.js";
+import MenuItem from "../models/menuItemSchema.js";
 
+//TODO: I need middleware to check if the user is the owner of the restaurant
 export const createMenuItem = asyncHandler(async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
   const { name, description, price, restaurantId } = req.body;
-  const menuItem = await prisma.menuItem.create({
-    data: {
-      name,
-      description,
-      price,
-      restaurant: {
-        connect: {
-          id: restaurantId,
-        },
-      },
-    },
-  });
+
+  const menuItem = await new MenuItem({
+    name,
+    description,
+    price,
+    restaurantId,
+  }).save();
 
   res.status(201).json({
     status: "success",
@@ -33,11 +31,6 @@ export const getRestaurantMenuItems = asyncHandler(async (req, res) => {
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
-  // const restaurantId = req.body.restaurantId;
-
-  // const menuItems = await prisma.menuItem.findMany({
-  //   where: { restaurantId: req.params.id },
-  // });
   res.status(200).json({
     status: "success",
     data: {
@@ -47,18 +40,7 @@ export const getRestaurantMenuItems = asyncHandler(async (req, res) => {
 });
 
 export const getMenuItemById = asyncHandler(async (req, res) => {
-  const menuItem = await prisma.menuItem.findUnique({
-    where: {
-      id: req.params.id,
-    },
-  });
-
-  if (!menuItem) {
-    return res.status(404).json({
-      status: "fail",
-      message: "Menu item not found",
-    });
-  }
+  const menuItem = req.menuItem;
 
   res.status(200).json({
     status: "success",
@@ -67,19 +49,15 @@ export const getMenuItemById = asyncHandler(async (req, res) => {
     },
   });
 });
-export const deleteMenuItem = asyncHandler(async (req, res) => {
-  const menuItem = await prisma.menuItem.delete({
-    where: {
-      id: req.params.id,
-    },
-  });
 
-  if (!menuItem) {
-    return res.status(404).json({
-      status: "fail",
-      message: "Menu item not found",
-    });
+export const deleteMenuItem = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
   }
+  const menuItem = req.menuItem
+  await menuItem.deleteOne();
 
   res.status(204).json({
     status: "success",

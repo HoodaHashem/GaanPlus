@@ -12,6 +12,8 @@ import 'dotenv/config'
 import usersRouter from "./routes/users.js";
 import restaurantsRouter from "./routes/restaurants.js";
 import menusRouter from "./routes/menuItems.js";
+import ordersRouter from "./routes/orders.js";
+// import orderItemsRouter from "./routes/orderItems.js";
 
 
 const app = express()
@@ -40,8 +42,8 @@ app.use(loggerMiddleware)
 
 
 // this route is for development purposes only
-// it should not be used in production
 // its purpose is to help developers test the api
+//! Note: this route should be removed in production
 app.use("/api/v1/admin", adminRouter);
 
 
@@ -50,7 +52,8 @@ app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/users", usersRouter);
 app.use("/api/v1/restaurants", restaurantsRouter);
 app.use("/api/v1/menu-items", menusRouter);
-// app.use("/api/v1/orders", ordersRouter);
+app.use("/api/v1/orders", ordersRouter);
+
 app.use(globalErrors)
 
 app.listen(PORT, (err) => {

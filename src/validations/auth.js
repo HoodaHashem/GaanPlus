@@ -1,4 +1,5 @@
-import prisma from "../utils/prisma.js";
+import User from "../models/userSchema.js";
+import bcrypt from "bcryptjs";
 
 export const signupValidation = {
   email: {
@@ -8,17 +9,14 @@ export const signupValidation = {
     custom: {
       options: async (value) => {
         if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value)) {
-          return Promise.reject("Please enter a valid email");
+          throw new Error("Please enter a valid email");
         } else {
-          const exists = await prisma.user.findUnique({
-            where: {
-              email: value
-            }
-          })
+          const exists = await User.findOne({
+            email: value,
+          });
           if (exists) {
-            return Promise.reject("Email already exists");
+            throw new Error("Email already exists");
           }
-          return Promise.resolve();
         }
       },
     },
@@ -58,27 +56,17 @@ export const loginValidation = {
       errorMessage: "Email is required",
     },
     custom: {
-      options: async (value, {req}) => {
+      options: async (value, { req }) => {
         if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value)) {
-          return Promise.reject("Please enter a valid email");
+          throw new Error("Please enter a valid email");
         } else {
-          const exists = await prisma.user.findUnique({
-            where: {
-              email: value
-            },
-            select: {
-              id: true,
-              email: true,
-              firstName: true,
-              lastName: true,
-              password: true,
-            }
-          })
+          const exists = await User.findOne({
+            email: value,
+          }).select("+password");
           if (!exists) {
-            return Promise.reject("Email does not exist");
+            throw new Error("Email does not exist");
           }
           req.user = exists;
-          return Promise.resolve();
         }
       },
     },
@@ -87,5 +75,17 @@ export const loginValidation = {
     notEmpty: {
       errorMessage: "Password is required",
     },
+    custom: {
+      options: async (value, { req }) => {
+        const user = req.user;
+        if (!user) {
+          throw new Error("User not found");
+        }
+        const isMatch = await bcrypt.compare(value, user.password);
+        if (!isMatch) {
+          throw new Error("Invalid password");
+        }
+      },
+    }
   },
 };
