@@ -7,6 +7,7 @@ import { createRestaurantValidation, deleteRestaurantValidation, getRestaurantBy
 const restaurantsRouter = Router();
 
 restaurantsRouter.use(validateJwtCookie);
+
 restaurantsRouter.post("/", checkSchema(createRestaurantValidation), createRestaurant);
 restaurantsRouter.get("/", getRestaurants);
 restaurantsRouter.get("/:id", checkSchema(getRestaurantByIdValidation), getRestaurantById);

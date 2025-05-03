@@ -1,6 +1,9 @@
 import { validationResult } from "express-validator";
 import asyncHandler from "../utils/asyncHandler.js";
 import Order from "../models/orderSchema.js";
+import NotificationCenter from "../utils/notificationCenter.js";
+
+const notificationCenter = new NotificationCenter();
 
 export const getOrders = asyncHandler(async (req, res) => {
   const userId = req.user.id;
@@ -19,7 +22,6 @@ export const getOrders = asyncHandler(async (req, res) => {
 });
 
 export const getOrderById = asyncHandler(async (req, res) => {
-
   res.status(200).json({
     status: "success",
     data: {
@@ -41,8 +43,6 @@ export const createOrder = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const { orderItems } = req.body;
 
-  //TODO: Send notification email to the restaurant owner and the user to confirm the order
-
   const order = await new Order({
     userId: userId,
     restaurantId: req.body.restaurantId,
@@ -51,7 +51,26 @@ export const createOrder = asyncHandler(async (req, res) => {
       quantity: item.quantity,
     })),
     totalPrice: req.totalPrice,
+    deliveryAddress: req.body.deliveryAddress,
   }).save();
+  await order.populate("orderItems.menuItemId userId restaurantId")
+
+  const userNotification = await notificationCenter.sendOrderToUser(order);
+  const restaurantNotification = await notificationCenter.sendOrderToRestaurant(
+    order
+  );
+
+  if (!restaurantNotification.success) {
+    console.error(
+      `Failed to notify restaurant: ${restaurantNotification.error}`
+    );
+  }
+
+  if (!userNotification.success) {
+    console.error(
+      `Failed to send confirmation to user: ${userNotification.error}`
+    );
+  }
 
   res.status(201).json({
     status: "success",
@@ -60,7 +79,6 @@ export const createOrder = asyncHandler(async (req, res) => {
     },
   });
 });
-
 
 export const prepareOrder = asyncHandler(async (req, res) => {
   const errors = validationResult(req);
@@ -91,9 +109,16 @@ export const deliverOrder = asyncHandler(async (req, res) => {
   }
   const order = req.order;
 
-  //TODO: Send notification email to the user to confirm the order is out for delivery
   order.status = "OUT_FOR_DELIVERY";
   await order.save();
+  const userNotification = await notificationCenter.sendOrderOutForDelivery(
+    order
+  );
+  if (!userNotification.success) {
+    console.error(
+      `Failed to send confirmation to user: ${userNotification.error}`
+    );
+  }
 
   res.status(200).json({
     status: "success",
@@ -111,10 +136,15 @@ export const completeOrder = asyncHandler(async (req, res) => {
   }
   const order = req.order;
 
-  //TODO: Send notification email to the user to confirm the order is delivered
   order.status = "DELIVERED";
   await order.save();
 
+  const userNotification = await notificationCenter.sendOrderDelivered(order);
+  if (!userNotification.success) {
+    console.error(
+      `Failed to send confirmation to user: ${userNotification.error}`
+    );
+  }
   res.status(200).json({
     status: "success",
     message: "Order delivered successfully",
@@ -131,9 +161,24 @@ export const cancelOrder = asyncHandler(async (req, res) => {
   }
   const order = req.order;
 
-  //TODO: Send notification email to the restaurant owner and the user to confirm the order is cancelled
   order.status = "CANCELLED";
   await order.save();
+
+  const userNotification = await notificationCenter.sendOrderCancelledToUser(
+    order
+  );
+  const restaurantNotification =
+    await notificationCenter.sendOrderCancelledToRestaurant(order);
+  if (!restaurantNotification.success) {
+    console.error(
+      `Failed to notify restaurant: ${restaurantNotification.error}`
+    );
+  }
+  if (!userNotification.success) {
+    console.error(
+      `Failed to send confirmation to user: ${userNotification.error}`
+    );
+  }
 
   res.status(200).json({
     status: "success",
@@ -167,5 +212,31 @@ export const getOrderItems = asyncHandler(async (req, res) => {
     data: {
       orderItems,
     },
+  });
+});
+
+export const rejectOrder = asyncHandler(async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      status: "fail",
+      errors: errors.array(),
+    });
+  }
+  const order = req.order;
+
+  order.status = "REJECTED";
+  await order.save();
+
+  const userNotification = await notificationCenter.sendOrderRejected(order);
+  if (!userNotification.success) {
+    console.error(
+      `Failed to send confirmation to user: ${userNotification.error}`
+    );
+  }
+
+  res.status(200).json({
+    status: "success",
+    message: "Order rejected successfully",
   });
 });
